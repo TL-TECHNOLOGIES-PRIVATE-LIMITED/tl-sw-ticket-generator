@@ -18,17 +18,29 @@ const UserDetailsForm = ({ phoneNumber, onSubmitSuccess }) => {
     userPhone:phoneNumber
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
   
-    const completeFormData = {
-      ...formData,
-      phoneNumber, // Include the phone number if needed
-    };
-  console.log(completeFormData)
-    onSubmitSuccess(completeFormData);
+  //   const completeFormData = {
+  //     ...formData,
+  //     phoneNumber, // Include the phone number if needed
+  //   };
+  // console.log(completeFormData)
+  //   onSubmitSuccess(completeFormData);
+  // };
+  
+// Inside handleSubmit function in UserDetailsForm.js
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  const completeFormData = {
+    ...formData,
+    phoneNumber,
+    createdAt: new Date().toISOString()
   };
-  
+
+  onSubmitSuccess(completeFormData);
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -5,6 +5,7 @@ import "react-phone-input-2/lib/style.css";
 import { useFormik } from "formik";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signInWithCredential, PhoneAuthProvider } from "firebase/auth";
 import { initializeApp } from "firebase/app";
+import axios from "axios";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAv5eb6I1AEY_UfX1S8r2IVOWJD0sIVFXo",
@@ -46,6 +47,52 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
     };
   }, []);
 
+  // const initializeRecaptcha = () => {
+  //   return new Promise((resolve, reject) => {
+  //     if (typeof window === 'undefined' || !recaptchaContainerRef.current) {
+  //       reject(new Error('Window or container not available'));
+  //       return;
+  //     }
+
+  //     try {
+  //       if (!window.recaptchaVerifier) {
+  //         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+  //           size: 'normal',
+  //           callback: () => {
+  //             setRecaptchaInitialized(true);
+  //             setError("");
+  //             resolve();
+  //           },
+  //           'expired-callback': () => {
+  //             setRecaptchaInitialized(false);
+  //             setError("reCAPTCHA expired. Please refresh the page.");
+  //             resetRecaptcha();
+  //             reject(new Error('reCAPTCHA expired'));
+  //           }
+  //         });
+  //       }
+
+  //       recaptchaInitTimeout.current = setTimeout(() => {
+  //         reject(new Error('reCAPTCHA initialization timeout'));
+  //       }, 10000);
+
+  //       window.recaptchaVerifier.render()
+  //         .then(() => {
+  //           clearTimeout(recaptchaInitTimeout.current);
+  //           resolve();
+  //         })
+  //         .catch((error) => {
+  //           clearTimeout(recaptchaInitTimeout.current);
+  //           reject(error);
+  //         });
+
+  //     } catch (error) {
+  //       clearTimeout(recaptchaInitTimeout.current);
+  //       reject(error);
+  //     }
+  //   });
+  // };
+
   const initializeRecaptcha = () => {
     return new Promise((resolve, reject) => {
       if (typeof window === 'undefined' || !recaptchaContainerRef.current) {
@@ -56,7 +103,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       try {
         if (!window.recaptchaVerifier) {
           window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-            size: 'normal', // You can change to 'invisible' if desired
+            size: 'normal',  // Use 'invisible' for automatic verification
             callback: () => {
               setRecaptchaInitialized(true);
               setError("");
@@ -80,11 +127,26 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       }
     });
   };
+  
+  
+  // const resetRecaptcha = async () => {
+  //   if (window.recaptchaVerifier) {
+  //     try {
+  //       await window.recaptchaVerifier.clear();
+  //       window.recaptchaVerifier = null;
+  //       setRecaptchaInitialized(false);
+  //       await initializeRecaptcha();
+  //     } catch (error) {
+  //       console.error("Error resetting reCAPTCHA:", error);
+  //       setError("Failed to reset reCAPTCHA. Please refresh the page.");
+  //     }
+  //   }
+  // };
 
   const resetRecaptcha = async () => {
     if (window.recaptchaVerifier) {
       try {
-        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier.clear(); 
         window.recaptchaVerifier = null;
         setRecaptchaInitialized(false);
         await initializeRecaptcha();
@@ -94,6 +156,29 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       }
     }
   };
+  
+  // useEffect(() => {
+  //   if (!isClient) return;
+
+  //   const setupInitialRecaptcha = async () => {
+  //     try {
+  //       await initializeRecaptcha();
+  //     } catch (error) {
+  //       console.error("Initial reCAPTCHA setup failed:", error);
+  //       setError("Failed to initialize verification. Please refresh the page.");
+  //     }
+  //   };
+
+  //   setupInitialRecaptcha();
+
+  //   return () => {
+  //     if (window.recaptchaVerifier) {
+  //       window.recaptchaVerifier.clear();
+  //       window.recaptchaVerifier = null;
+  //     }
+  //   };
+  // }, [isClient]);
+
 
   useEffect(() => {
     if (!isClient) return;
@@ -116,9 +201,25 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       }
     };
   }, [isClient]);
+  
+  
+
+  // const startResendTimer = () => {
+  //   setResendCounter(30);
+  //   resendTimerRef.current = setInterval(() => {
+  //     setResendCounter((prev) => {
+  //       if (prev <= 1) {
+  //         clearInterval(resendTimerRef.current);
+  //         return 0;
+  //       }
+  //       return prev - 1;
+  //     });
+  //   }, 1000);
+  // };
+
 
   const startResendTimer = () => {
-    setResendCounter(30);
+    setResendCounter(30); // Reset counter to 30 seconds
     resendTimerRef.current = setInterval(() => {
       setResendCounter((prev) => {
         if (prev <= 1) {
@@ -129,6 +230,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       });
     }, 1000);
   };
+  
 
   const formik = useFormik({
     initialValues: {
@@ -139,22 +241,22 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
         setError("Please enter a valid phone number");
         return;
       }
-  
+
       setLoading(true);
       setError("");
-  
+
       try {
         if (!recaptchaInitialized) {
           await initializeRecaptcha();
         }
-  
+
         const confirmation = await Promise.race([
           signInWithPhoneNumber(auth, `+${data.phone}`, window.recaptchaVerifier),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('OTP request timeout')), 30000)
           )
         ]);
-  
+
         setConfirmationResult(confirmation);
         setShowOtpInput(true);
         setError("");
@@ -180,11 +282,11 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
   const handleOtpChange = (e, index) => {
     const value = e.target.value;
     if (!/^[0-9]?$/.test(value)) return;
-  
+    
     const newOtp = otp.split("");
     newOtp[index] = value;
     setOtp(newOtp.join(""));
-  
+    
     if (value && index < otpRefs.current.length - 1) {
       otpRefs.current[index + 1]?.focus();
     } else if (!value && index > 0) {
@@ -202,9 +304,9 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').slice(0, 6);
     if (!/^\d+$/.test(pastedData)) return;
-  
+    
     setOtp(pastedData.padEnd(6, ''));
-  
+    
     const lastIndex = Math.min(pastedData.length, 6);
     if (otpRefs.current[lastIndex - 1]) {
       otpRefs.current[lastIndex - 1].focus();
@@ -216,24 +318,28 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       setError("Please enter a valid 6-digit OTP");
       return;
     }
-  
+
     setLoading(true);
     setError("");
-  
+
     try {
       const credential = PhoneAuthProvider.credential(
         confirmationResult.verificationId,
         otp
       );
-  
+
       await Promise.race([
         signInWithCredential(auth, credential),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Verification timeout')), 30000)
         )
       ]);
-  
+
       setVerified(true);
+      const response = await axios.post("/api/verify-phone", { phone });
+      console.log(response,"ress");
+      alert(response.data.message);
+      onVerificationSuccess(phone);
       onVerificationSuccess(true);
     } catch (err) {
       console.error("Error verifying OTP:", err);
@@ -255,24 +361,39 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
     }
   };
 
+  // const handleResendOtp = async () => {
+  //   if (resendCounter > 0) return;
+    
+  //   setLoading(true);
+  //   setError("");
+  //   setOtp("");
+
+  //   try {
+  //     await resetRecaptcha();
+  //     await formik.submitForm();
+  //   } catch (error) {
+  //     console.error("Error resending OTP:", error);
+  //     setError("Failed to resend OTP. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const handleResendOtp = async () => {
-    if (resendCounter > 0) return;
+    if (resendCounter > 0) return; // Prevent clicking before timeout
   
     setLoading(true);
     setError("");
-    setOtp("");
+    setOtp(""); // Clear previous OTP input
   
     try {
-      await resetRecaptcha();
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        `+${formik.values.phone}`,
-        window.recaptchaVerifier
-      );
-  
-      setConfirmationResult(confirmation);
+      await resetRecaptcha(); // Reset and reinitialize reCAPTCHA
+      const confirmation = await signInWithPhoneNumber(auth, `+${formik.values.phone}`, window.recaptchaVerifier);
+      
+      setConfirmationResult(confirmation); // Store new confirmation result
       setShowOtpInput(true);
-      startResendTimer();
+      startResendTimer(); // Restart the timer after sending new OTP
       setError("");
     } catch (error) {
       console.error("Error resending OTP:", error);
@@ -281,29 +402,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       setLoading(false);
     }
   };
-
-  // When the OTP input is shown, start a 30-second timeout.
-  // If the user doesn't verify the OTP within this time,
-  // return to the phone number input view (while retaining the phone number).
-  const handleOtpTimeout = () => {
-    setOtp("");
-    setShowOtpInput(false);
-    setError("OTP expired. Please request a new OTP.");
-    // The reCAPTCHA state remains verified and the phone number is preserved in formik.values.phone.
-  };
-
-  useEffect(() => {
-    let otpTimeout;
-    if (showOtpInput && !verified) {
-      otpTimeout = setTimeout(() => {
-        handleOtpTimeout();
-      }, 30000);
-    }
-    return () => {
-      if (otpTimeout) clearTimeout(otpTimeout);
-    };
-  }, [showOtpInput, verified]);
-
+  
   return (
     <div className="flex items-center justify-center">
       <motion.div
@@ -314,7 +413,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
         className="flex flex-col items-center justify-center rounded-3xl w-full"
       >
         <h2 className="text-2xl font-bold mb-6 text-pink-600">Phone Authentication</h2>
-  
+
         {isClient && !verified && !showOtpInput && (
           <form onSubmit={formik.handleSubmit} className="w-full">
             <div className="relative">
@@ -341,7 +440,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
             </button>
           </form>
         )}
-  
+
         {isClient && showOtpInput && !verified && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -389,7 +488,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
             </div>
           </motion.div>
         )}
-  
+
         {isClient && verified && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -401,7 +500,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
             </p>
           </motion.div>
         )}
-  
+
         {isClient && !showOtpInput && (
           <div id="recaptcha-container" ref={recaptchaContainerRef} className="mt-4"></div>
         )}

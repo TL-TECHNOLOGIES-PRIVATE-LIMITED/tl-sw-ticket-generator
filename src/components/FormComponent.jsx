@@ -8,7 +8,7 @@ import BackgroundPatterns from "./BackgroundPatterns";
 import { FaPhoneAlt, FaUserCircle, FaTicketAlt, FaCheckCircle } from 'react-icons/fa';
 import { BsCalendarEventFill, BsClockFill } from 'react-icons/bs';
 import { MdLocationOn } from 'react-icons/md';
-
+import { saveUserDetails, saveTicketDetails } from '../firebase';
 const FormComponent = () => {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [userPhone, setUserPhone] = useState("");
@@ -26,11 +26,35 @@ const FormComponent = () => {
   };
   
 
-  const handleFormSubmit = (formData) => {
-    setUserDetails(formData);
-    console.log(formData)
-    setShowTicket(true);
-    setStep(3);
+  // const handleFormSubmit = (formData) => {
+  //   setUserDetails(formData);
+  //   console.log(formData)
+  //   setShowTicket(true);
+  //   setStep(3);
+  // };
+
+  const handleFormSubmit = async (formData) => {
+    try {
+      // Save user details
+      const userResult = await saveUserDetails(formData);
+      
+      if (userResult.success) {
+        // Save ticket details
+        const ticketResult = await saveTicketDetails({
+          userId: userResult.id,
+          ...formData,
+        });
+        
+        if (ticketResult.success) {
+          setUserDetails(formData);
+          setShowTicket(true);
+          setStep(3);
+        }
+      }
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      // Handle error appropriately
+    }
   };
 
   const handleDownloadTicket = () => {
