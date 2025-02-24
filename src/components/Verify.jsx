@@ -46,17 +46,63 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
     };
   }, []);
 
+  // const initializeRecaptcha = () => {
+  //   return new Promise((resolve, reject) => {
+  //     if (typeof window === 'undefined' || !recaptchaContainerRef.current) {
+  //       reject(new Error('Window or container not available'));
+  //       return;
+  //     }
+
+  //     try {
+  //       if (!window.recaptchaVerifier) {
+  //         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+  //           size: 'normal',
+  //           callback: () => {
+  //             setRecaptchaInitialized(true);
+  //             setError("");
+  //             resolve();
+  //           },
+  //           'expired-callback': () => {
+  //             setRecaptchaInitialized(false);
+  //             setError("reCAPTCHA expired. Please refresh the page.");
+  //             resetRecaptcha();
+  //             reject(new Error('reCAPTCHA expired'));
+  //           }
+  //         });
+  //       }
+
+  //       recaptchaInitTimeout.current = setTimeout(() => {
+  //         reject(new Error('reCAPTCHA initialization timeout'));
+  //       }, 10000);
+
+  //       window.recaptchaVerifier.render()
+  //         .then(() => {
+  //           clearTimeout(recaptchaInitTimeout.current);
+  //           resolve();
+  //         })
+  //         .catch((error) => {
+  //           clearTimeout(recaptchaInitTimeout.current);
+  //           reject(error);
+  //         });
+
+  //     } catch (error) {
+  //       clearTimeout(recaptchaInitTimeout.current);
+  //       reject(error);
+  //     }
+  //   });
+  // };
+
   const initializeRecaptcha = () => {
     return new Promise((resolve, reject) => {
       if (typeof window === 'undefined' || !recaptchaContainerRef.current) {
         reject(new Error('Window or container not available'));
         return;
       }
-
+  
       try {
         if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'normal',
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+            size: 'normal',  // Use 'invisible' for automatic verification
             callback: () => {
               setRecaptchaInitialized(true);
               setError("");
@@ -70,32 +116,36 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
             }
           });
         }
-
-        recaptchaInitTimeout.current = setTimeout(() => {
-          reject(new Error('reCAPTCHA initialization timeout'));
-        }, 10000);
-
+  
         window.recaptchaVerifier.render()
-          .then(() => {
-            clearTimeout(recaptchaInitTimeout.current);
-            resolve();
-          })
-          .catch((error) => {
-            clearTimeout(recaptchaInitTimeout.current);
-            reject(error);
-          });
-
+          .then(() => resolve())
+          .catch(reject);
+  
       } catch (error) {
-        clearTimeout(recaptchaInitTimeout.current);
         reject(error);
       }
     });
   };
+  
+  
+  // const resetRecaptcha = async () => {
+  //   if (window.recaptchaVerifier) {
+  //     try {
+  //       await window.recaptchaVerifier.clear();
+  //       window.recaptchaVerifier = null;
+  //       setRecaptchaInitialized(false);
+  //       await initializeRecaptcha();
+  //     } catch (error) {
+  //       console.error("Error resetting reCAPTCHA:", error);
+  //       setError("Failed to reset reCAPTCHA. Please refresh the page.");
+  //     }
+  //   }
+  // };
 
   const resetRecaptcha = async () => {
     if (window.recaptchaVerifier) {
       try {
-        await window.recaptchaVerifier.clear();
+        window.recaptchaVerifier.clear(); 
         window.recaptchaVerifier = null;
         setRecaptchaInitialized(false);
         await initializeRecaptcha();
@@ -105,10 +155,33 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       }
     }
   };
+  
+  // useEffect(() => {
+  //   if (!isClient) return;
+
+  //   const setupInitialRecaptcha = async () => {
+  //     try {
+  //       await initializeRecaptcha();
+  //     } catch (error) {
+  //       console.error("Initial reCAPTCHA setup failed:", error);
+  //       setError("Failed to initialize verification. Please refresh the page.");
+  //     }
+  //   };
+
+  //   setupInitialRecaptcha();
+
+  //   return () => {
+  //     if (window.recaptchaVerifier) {
+  //       window.recaptchaVerifier.clear();
+  //       window.recaptchaVerifier = null;
+  //     }
+  //   };
+  // }, [isClient]);
+
 
   useEffect(() => {
     if (!isClient) return;
-
+  
     const setupInitialRecaptcha = async () => {
       try {
         await initializeRecaptcha();
@@ -117,9 +190,9 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
         setError("Failed to initialize verification. Please refresh the page.");
       }
     };
-
+  
     setupInitialRecaptcha();
-
+  
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
@@ -127,6 +200,8 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
       }
     };
   }, [isClient]);
+  
+  
 
   // const startResendTimer = () => {
   //   setResendCounter(30);
