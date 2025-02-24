@@ -29,6 +29,7 @@ const auth = getAuth(app);
 export const saveUserDetails = async (userData) => {
   try {
     const userRef = collection(db, "users");
+    console.log(userData,"userrdataa");
     const docRef = await addDoc(userRef, {
       ...userData,
       createdAt: new Date().toISOString(),

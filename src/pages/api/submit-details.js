@@ -5,8 +5,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Method Not Allowed" });
   }
 
-  const { phone, name, age, seatCategory, location, ticketNumber } = req.body;
-
+  const {
+     phone, 
+     name, 
+     age, 
+     seatCategory, 
+    //  location, 
+     ticketNumber 
+    } = req.body;
+console.log(req.body,"bodyyy");
   try {
     const pool = await poolPromise;
     await pool.request()
@@ -14,7 +21,7 @@ export default async function handler(req, res) {
       .input("name", sql.VarChar, name)
       .input("age", sql.Int, age)
       .input("seatCategory", sql.VarChar, seatCategory)
-      .input("location", sql.VarChar, location)
+      // .input("location", sql.VarChar, location)
       .input("ticketNumber", sql.VarChar, ticketNumber)
       .input("status", sql.VarChar, "completed")
       .query(`

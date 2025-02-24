@@ -17,7 +17,7 @@ const UserDetailsForm = ({ phoneNumber, onSubmitSuccess }) => {
     seatCategory: '',
     userPhone:phoneNumber
   });
-
+console.log(phoneNumber,"phhh");
   // const handleSubmit = (e) => {
   //   e.preventDefault();
   

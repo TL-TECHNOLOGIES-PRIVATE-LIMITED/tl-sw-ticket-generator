@@ -5,7 +5,6 @@ import "react-phone-input-2/lib/style.css";
 import { useFormik } from "formik";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signInWithCredential, PhoneAuthProvider } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import axios from "axios";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAv5eb6I1AEY_UfX1S8r2IVOWJD0sIVFXo",
@@ -20,7 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
+const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified, setUserPhone }) => {
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState("");
   const [otp, setOtp] = useState("");
@@ -231,7 +230,6 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
     }, 1000);
   };
   
-
   const formik = useFormik({
     initialValues: {
       phone: "",
@@ -241,7 +239,6 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
         setError("Please enter a valid phone number");
         return;
       }
-
       setLoading(true);
       setError("");
 
@@ -261,6 +258,7 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
         setShowOtpInput(true);
         setError("");
         startResendTimer();
+        setUserPhone(data.phone); // Store phone number in parent state
       } catch (err) {
         console.error("Error sending OTP:", err);
         if (err.message.includes('timeout')) {
@@ -334,13 +332,8 @@ const PhoneAuth = ({ onVerificationSuccess, isPhoneVerified }) => {
           setTimeout(() => reject(new Error('Verification timeout')), 30000)
         )
       ]);
-
       setVerified(true);
-      const response = await axios.post("/api/verify-phone", { phone });
-      console.log(response,"ress");
-      alert(response.data.message);
-      onVerificationSuccess(phone);
-      onVerificationSuccess(true);
+      onVerificationSuccess(formik.values.phone); // Pass phone number to parent
     } catch (err) {
       console.error("Error verifying OTP:", err);
       if (err.message === 'Verification timeout') {

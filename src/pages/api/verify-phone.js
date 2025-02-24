@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   const { phone } = req.body;
-  
+  console.log(phone,"phoon");
   try {
     const pool = await poolPromise;
     const result = await pool.request()

@@ -21,8 +21,8 @@ const FormComponent = () => {
   const handleVerificationSuccess = (phoneNumber) => {
     console.log("Phone Verified:", phoneNumber);
     setIsPhoneVerified(true);
-    setUserPhone(phoneNumber);
     setStep(2);
+    setUserPhone(phoneNumber); // Ensure phone number is stored in state
   };
   
 
@@ -108,7 +108,7 @@ const FormComponent = () => {
         {/* Content Container */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-6 mb-6 relative">
         {!isPhoneVerified ? (
-  <PhoneAuth isPhoneVerified={isPhoneVerified} onVerificationSuccess={handleVerificationSuccess} />
+  <PhoneAuth isPhoneVerified={isPhoneVerified} onVerificationSuccess={handleVerificationSuccess} setUserPhone={setUserPhone}/>
 ) : !showTicket ? (
   <UserDetailsForm phoneNumber={userPhone} onSubmitSuccess={handleFormSubmit} />
 ) : (
